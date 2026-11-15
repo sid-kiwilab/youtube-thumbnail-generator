@@ -1,5 +1,5 @@
-import { ThumbnailCompareBoard } from "@/components/ThumbnailCompareBoard";
+import { ThumbnailStudio } from "@/components/ThumbnailStudio";
 
 export default function Home() {
-  return <ThumbnailCompareBoard />;
+  return <ThumbnailStudio />;
 }

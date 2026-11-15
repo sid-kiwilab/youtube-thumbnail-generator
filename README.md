@@ -1,94 +1,75 @@
 # youtube-thumbnail-generator
 
-Next.js app to **compare YouTube thumbnails** against benchmark layouts and **append versioned AI cuts** with prompts stored in Neon.
+Self-hosted **Next.js** app for YouTube creators — run it on your computer with **your** API keys. Nothing is stored on our servers.
 
-Built as a small, inspectable example: a compare board in the browser, a JSON history of generations, and a CLI that never overwrites existing JPEGs.
+1. **Load your channel** — **long-form only** (≤60s, `#shorts`, and YouTube Shorts up to 3 min via `/shorts/` URL check), sorted by view count.
+2. **Niche compare** — OpenRouter infers niche + picks competitors (or basic fallback); **Refresh niche** / **Refresh competitors** to retry; add/remove up to 3 in the UI.
+3. **Suggest** title (OpenRouter) + **generate** thumb (OpenAI) from your real thumbnails as refs.
+4. **Download** locally. No YouTube upload, no OAuth, no hosted DB.
 
-## Stack
+**Showcase model:** clone this repo → [get API keys](docs/setup.md) (~10 min) → `npm run dev`.
 
-Next.js 16 · React 19 · Tailwind CSS 4 · TypeScript · OpenAI Images · Neon Postgres
+![Stack](https://img.shields.io/badge/Next.js-16-black) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
-## What you get
-
-| Piece | Role |
-|-------|------|
-| **`/` compare board** | Benchmark thumbs + your generated cuts side by side; edit title; delete with confirm |
-| **`public/generated/latest.json`** | Title + `thumbs[]` history |
-| **`scripts/generate.mjs`** | Title + 1280×720 thumb from latest Neon prompt versions |
-| **`docs/generate.md`** | Locked image settings + how prompt versions work |
-
-Demo data in `public/refs/` and `public/generated/` shows one full iteration arc (composite refs → many versions → locked pick).
-
-## Getting started
+## Quick start
 
 ```bash
+git clone https://github.com/sid-kiwilab/youtube-thumbnail-generator.git
+cd youtube-thumbnail-generator
 npm install
-cp .env.example .env   # OPENAI_API_KEY + NEON_CONNECTION_STRING
+cp .env.example .env
+```
+
+**[→ API keys setup (YouTube, OpenRouter, OpenAI)](docs/setup.md)** — start with YouTube only.
+
+```bash
 npm run dev
 # Windows: start.bat
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) · paste `@handle` · **Load channel** (long-form only; Shorts skipped).
 
-### Generate a new cut (costs OpenAI credits)
+Main APIs: `POST /api/youtube/load`, `GET /api/youtube/bootstrap`, `POST /api/youtube/refetch` (refresh niche or append competitors), `POST /api/youtube/competitors` (add/remove). Legacy: `GET /api/youtube/channel`.
 
-Requires **ffmpeg** on PATH only if you extract stills from video with `--react` / `--fails` instead of PNG refs.
+## API keys at a glance
 
-```bash
-node scripts/generate.mjs --sync-json   # refresh latest.json from jpgs on disk (free)
+| Key | Required for | Where to get |
+|-----|----------------|--------------|
+| `YOUTUBE_API_KEY` | Load channel, competitors, thumbs from API | [Google Cloud](docs/setup.md#1-youtube-data-api-key) · YouTube Data API v3 |
+| `OPENROUTER_API_KEY` | Niche + competitors on load, suggest title, vision check | [OpenRouter](docs/setup.md#2-openrouter-titles--vision-check) |
+| `OPENAI_API_KEY` | Generate thumbnail | [OpenAI](docs/setup.md#3-openai-thumbnails-only) |
 
-node scripts/generate.mjs --confirm \
-  --sid-ref public/refs/faces/sid-headback.png \
-  --fail-ref public/refs/faces/omegle-rizz.png
-```
+Full step-by-step: **[docs/setup.md](docs/setup.md)**
 
-See [docs/generate.md](docs/generate.md) for prompt versioning, quality lock (`gpt-image-2`, `low`, 1280×720), and `--seed-only` / `--add-version`.
+## Stack
 
-## Environment
+Next.js 16 · React 19 · Tailwind CSS 4 · YouTube Data API v3 · OpenRouter · OpenAI Images
 
-| Variable | Purpose |
-|----------|---------|
-| `OPENAI_API_KEY` | Title + image generation |
-| `OPENAI_IMAGE_MODEL` | default `gpt-image-2` |
-| `OPENAI_LONGFORM_MODEL` | title model |
-| `NEON_CONNECTION_STRING` | `generator_prompts` table |
-| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | optional quota alerts |
+## What gets stored locally
 
-## Scripts
+| Path | Git | Contents |
+|------|-----|----------|
+| `data/workspace.json` | ignored | Channel + competitor snapshots (niche summary, search query, handles, subs); restored on refresh |
+| `data/cache/` | ignored | YouTube responses (~1h cache) |
+| `public/local/` | ignored | Generated thumbs |
+| `prompts/*.md` | tracked | Editable prompts |
 
-| Command | Purpose |
-|---------|---------|
-| `npm run dev` | Dev server |
-| `npm run build` | Production build |
-| `npm run lint` | ESLint |
-| `npm run generate` | `generate.mjs --confirm` (needs refs or video paths) |
-| `node scripts/crop-compare-thumbs.mjs` | Regen `public/refs/compare/thumb-*.png` from sources |
+## How it thinks about “good” thumbnails
 
-## Project layout
+- **Rank by views** on public videos — not CTR.
+- **Vision score** = model opinion (1–5), clearly labeled.
+- **Append-only** files in `public/local/`.
 
-```
-src/app/page.tsx                 # compare board
-src/app/api/generated/             # PATCH title, DELETE thumb
-src/app/api/refs/faces/          # list face ref PNGs
-public/generated/                # rizz-fails-vN.jpg + latest.json
-public/refs/compare/             # benchmark PNGs
-public/refs/faces/               # reactor + fail stills for composites
-scripts/generate.mjs             # Neon prompts + OpenAI
-scripts/lib/neon-prompts.mjs     # prompt bodies + HOOK_TEXT_STYLE lock
-docs/generate.md                 # methodology
-```
+Image pipeline: [docs/generate.md](docs/generate.md)
 
-## Methodology (short)
+## Self-host deploy
 
-1. **Prompts are versioned in Neon** — bump with `--add-version`; runtime always uses the highest `kind` version.
-2. **Thumbnails are append-only** — each run writes `{slug}-vN.jpg`; the script refuses to overwrite.
-3. **Composite refs** — pass two stills (`--sid-ref`, `--fail-ref`) so the image model keeps real faces, not a redrawn portrait.
-4. **Compare before you ship** — the UI mimics a YT grid so you judge click appeal against strong baselines.
+Same as local: set env vars on the host. Prefer a **VPS / Railway / Fly** with a persistent disk so `data/` and `public/local/` survive restarts. Serverless (e.g. Vercel) wipes local files between invocations unless you add object storage (out of scope).
 
-## Archive
+## Agent harness
 
-The old monorepo (upload, layout ffmpeg, captions, titles queue, overlays) lives locally at `c:\flutter_apps\youtube-archive` — not part of this public tree.
+AI-assisted work — **master file:** [`harness/HARNESS.md`](harness/HARNESS.md). Plan mode + `PLAN.md` → **Build** → `REVIEW` ⇄ `FIX` → `SYNC` → `PUSH`.
 
 ## License
 
-MIT (or your choice when you publish). Demo assets include likeness stills for illustration; replace refs for your own channel.
+MIT — [LICENSE](LICENSE)

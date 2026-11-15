@@ -1,32 +1,31 @@
-# SYNC — update necessary docs
+# SYNC — write it down
 
-**After END says `Yes, solid.`** — do not run before the solid gate.
+**Job:** docs + goal truth. **Not:** ship gate, not toolchain, not a consolation prize for a smaller feature.
 
-Update project documentation to match what shipped this session.
+Run only after **REVIEW** reported **No findings** (or lows you explicitly accepted). Fresh intent: the **original** user goal, not “we can push later.”
 
-## 1. Active docs (this repo)
+**No** `npm run build` / `npm run lint`. That is **PUSH**.
 
-| Doc | Path | Use for |
-|-----|------|---------|
-| Site README | [`README.md`](../README.md) | Dev commands, env var table, project structure, deployment |
-| Generator spec | [`docs/generate.md`](../docs/generate.md) | Prompt versions, CLI flags, locked image settings |
-| Full pipeline archive | `c:\flutter_apps\youtube-archive` | Local-only LIVE/JOURNAL/upload/layout (not in this repo) |
-| Harness workflow | `harness/*.md` | Session passes only — do not edit unless the user asks to change harness itself |
+## 0. Argue the goal first
 
-Optional: `docs/plans/` for saved START plans on large features (only when the user asks).
+Is the original one-sentence goal **fully** true in the tree right now?
 
-## 2. Update what changed
+If you would have to **redefine** success to say yes — **stop**. Do not update docs. Tell the user to drop **FIX.md** (or click Build again) with what’s missing.
 
-| If this changed… | Update… |
-|------------------|---------|
-| Routes, APIs, env vars, generation pipeline | [`README.md`](../README.md) and [`docs/generate.md`](../docs/generate.md) |
-| Dev commands, new scripts, public routes, env var descriptions | [`README.md`](../README.md) |
+## 1. Docs (behavior change only)
 
-Keep entries concise. Do not duplicate long history — link or summarize.
+| If this changed | Update |
+|-----------------|--------|
+| Routes, APIs, env, generation pipeline | [README.md](../README.md), [docs/generate.md](../docs/generate.md), [docs/setup.md](../docs/setup.md) |
+| Commands, scripts, env how-to | [README.md](../README.md), [docs/setup.md](../docs/setup.md) |
 
-## 3. Report
+Do **not** edit `harness/*` unless the user asked to change the harness. No invented LIVE/JOURNAL files.
 
-List each file updated with a one-line summary of what changed.
+If nothing user-facing changed, say so — skipping doc edits is fine.
 
+## 2. Report
 
-DONT FUCKING MODIFY THIS FILE!!!
+- Goal check: **pass** or the missing piece
+- Each doc you actually touched: one line (or **none**)
+
+**Stop.** Tell Sid to drop **PUSH.md** when he is ready to publish (build + lint + commit + push). Do not run toolchain in this pass. Do not commit or push here.

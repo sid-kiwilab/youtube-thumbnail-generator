@@ -1,28 +1,26 @@
-# FIX — execute lean fixes
+# FIX — patch what REVIEW proved
 
-Act on CLEAN findings (or obvious bugs you find while fixing). This is the **do work** pass.
+**Job:** generator again, **narrow**. **Not:** re-plan, not ship, not a second product.
 
-## Rules
+Act on REVIEW findings that **survived the counter** (or on a bug you hit while patching those). Fresh intent: make those rows false. Do not expand the original feature.
 
-- Lean diffs only — fix what is worth fixing, skip noise
-- Gut dead code and legacy paths — no backwards-compat shims to the old HyperFrames pipeline
-- Keep architecture minimal and robust
-- Re-check race-prone areas after changes: async generation flows, client state after unmount
+## 1. Order
 
-## Verify
+1. **High**, then **medium**.
+2. **Low** only if it is one line.
+3. If you **disagree** with a REVIEW row: put it under **Skipped** with a one-line counter — do not silently ignore **high/medium**.
 
-No separate migration runner. After changes:
+## 2. Rules
 
-```bash
-npm run build
-npm run lint
-```
+- Diff as small as the finding. No “while I’m here” cleanup unless it is dead code you must touch.
+- Gut shims and leftover paths; no backwards-compat theater.
+- After edits, re-check the **runtime** surface you changed (generation fetch, client unmount, in-flight flags).
+- Still **no** `npm run build` / `npm run lint` (that is **PUSH**). ReadLints on touched files. `npm run dev` only if the finding was behavioral.
 
-Hit affected routes locally with `npm run dev` when UI or API routes changed.
+## 3. Report
 
-## Report back
+- **Fixed** — finding → what changed
+- **Skipped** — finding → why (including “REVIEW was wrong because…”)
+- **Still open** — anything you could not finish
 
-- **Fixed** — bullet list of what changed
-- **Skipped** — anything intentionally left alone and why (one line each)
-
-DONT FUCKING MODIFY THIS FILE!!!
+**Stop.** Tell the user to drop **REVIEW.md** again. You do not get to declare **No findings** from the FIX seat — that is self-preferential bias. **SYNC** / **PUSH** are forbidden until REVIEW says **No findings**.

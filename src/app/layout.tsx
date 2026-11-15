@@ -9,7 +9,8 @@ const geistSans = Geist({
 
 export const metadata: Metadata = {
   title: "YouTube thumbnail generator",
-  description: "Compare AI thumbnails against benchmarks — versioned prompts in Neon",
+  description:
+    "Self-hosted YouTube thumbnail compare — channel + niche by views, local AI suggest",
 };
 
 export default function RootLayout({
