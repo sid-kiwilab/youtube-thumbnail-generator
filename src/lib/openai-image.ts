@@ -39,9 +39,19 @@ async function loadRefBuffer(ref: string): Promise<Buffer> {
 
 export async function generateThumbnailImage(
   prompt: string,
-  refUrls: string[],
+  opts: {
+    identityRefs: string[];
+    layoutRef?: string | null;
+  },
 ): Promise<Buffer> {
-  const refs = await Promise.all(refUrls.map(loadRefBuffer));
+  const urls = [
+    ...opts.identityRefs.filter(Boolean).slice(0, 5),
+    ...(opts.layoutRef ? [opts.layoutRef] : []),
+  ];
+  if (!urls.length) {
+    throw new Error("No reference images for edit");
+  }
+  const refs = await Promise.all(urls.map(loadRefBuffer));
 
   function buildForm(size: string) {
     const form = new FormData();

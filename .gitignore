@@ -57,6 +57,7 @@ next-env.d.ts
 /output/
 /data/
 /public/local/
+/public/refs/uploads/
 /working/
 
 # video / audio anywhere (never commit)

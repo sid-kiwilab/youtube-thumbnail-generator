@@ -11,4 +11,10 @@ You are given REAL reference images (the creator’s past thumbnails and/or stil
 Video brief:
 {{brief}}
 
+Reference analysis (borrow layout/hooks; do NOT paste whole reference thumbs):
+{{refNotes}}
+
+Supporting still files attached as images (use these exact faces/expressions when relevant):
+{{supportingNames}}
+
 Photoreal. High contrast. Simple and strong — optimized to read at phone size.

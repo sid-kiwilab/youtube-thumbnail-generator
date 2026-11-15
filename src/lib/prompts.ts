@@ -27,12 +27,54 @@ export function titlePrompt(vars: {
   return fillTemplate(readPromptFile("title.md"), vars);
 }
 
-export function thumbnailPrompt(vars: { brief: string }) {
+export function thumbnailPrompt(vars: {
+  brief: string;
+  refNotes?: string;
+  supportingNames?: string;
+}) {
   const hookStyle = readPromptFile("hook-style.md");
   return fillTemplate(readPromptFile("thumbnail.md"), {
     hookStyle,
     brief: vars.brief,
+    refNotes: vars.refNotes?.trim() || "(none)",
+    supportingNames: vars.supportingNames?.trim() || "(none)",
   });
+}
+
+export function refAnalyzeSystemPrompt(vars: {
+  channelTitle: string;
+  channelHandle: string;
+  channelAvatar: string;
+}) {
+  return fillTemplate(readPromptFile("ref-analyze.md"), vars);
+}
+
+export function formatRefAnalysisForPrompt(
+  items: {
+    source: string;
+    creatorFace: string;
+    otherFaces: string;
+    layoutToBorrow: string;
+    textOnImage: string;
+    doNotCopy: string;
+    videoTitle?: string;
+  }[],
+  summary: string,
+) {
+  const lines = items.map((it, i) => {
+    const label = it.videoTitle
+      ? `Ref ${i + 1} (${it.source}: ${it.videoTitle})`
+      : `Ref ${i + 1} (${it.source})`;
+    return [
+      label,
+      `  Creator face: ${it.creatorFace}`,
+      `  Other faces: ${it.otherFaces}`,
+      `  Layout to borrow: ${it.layoutToBorrow}`,
+      `  Text on image: ${it.textOnImage}`,
+      `  Do not copy: ${it.doNotCopy}`,
+    ].join("\n");
+  });
+  return `${summary}\n\n${lines.join("\n\n")}`;
 }
 
 export function visionEvalSystemPrompt() {

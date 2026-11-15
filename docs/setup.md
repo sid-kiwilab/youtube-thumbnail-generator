@@ -4,7 +4,7 @@ Everything runs on **your machine** (or your deploy). Keys live only in `.env` �
 
 **Minimum to try the app:** `YOUTUBE_API_KEY` (load your channel + auto niche search).
 
-**To generate titles / thumbs / vision check:** also OpenRouter + OpenAI.
+**To generate titles / thumbs (with ref analysis) / vision check:** also OpenRouter + OpenAI.
 
 Estimated time: **~10 minutes** if you already have Google + OpenAI accounts.
 
@@ -38,7 +38,7 @@ This is **not** signing into YouTube. It is a **Google Cloud API key** your serv
 
 ## 2. OpenRouter (titles + vision check)
 
-Used for: **Suggest title**, optional **Vision check**, and **smart niche + competitor pick** on channel load (2 OpenRouter calls when auto-search runs). **Refresh niche** / **Refresh competitors** in the UI trigger the same niche stack on demand (one call each, when the key is set).
+Used for: **Suggest title**, **ref analysis** before **Generate thumbnail** (one vision call per generate when refs are selected), optional **Vision check** on saved thumbs, and **smart niche + competitor pick** on channel load (2 OpenRouter calls when auto-search runs). **Refresh niche** / **Refresh competitors** in the UI trigger the same niche stack on demand (one call each, when the key is set).
 
 1. Sign up at [openrouter.ai](https://openrouter.ai/).
 2. **Keys** → create key → paste into `.env`:
@@ -58,7 +58,7 @@ The **Search:** line under Niche is the YouTube `type=channel` query — topic/f
 
 ## 3. OpenAI (thumbnails only)
 
-Used for: **Generate thumbnail** (`/v1/images/edits` with your channel thumbs as refs).
+Used for: **Generate thumbnail** (`/v1/images/edits` with supporting stills from `/refs/...` plus **at most one** full YouTube thumb as layout). Competitor and your refs are selectable in the UI; OpenRouter ref analysis shapes the text prompt (see [generate.md](generate.md)).
 
 1. [OpenAI API keys](https://platform.openai.com/api-keys) → create key.
 2. Add to `.env`:

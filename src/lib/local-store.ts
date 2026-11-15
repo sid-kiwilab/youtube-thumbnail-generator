@@ -1,4 +1,11 @@
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { LOCAL_DIR, LOCAL_LATEST_PATH } from "./paths";
 
@@ -73,4 +80,23 @@ export function absPathForLocalSrc(src: string) {
   const rel = relative(LOCAL_DIR, abs);
   if (rel.startsWith("..") || rel.includes("..")) return null;
   return abs;
+}
+
+export function deleteLocalThumb(src: string): boolean {
+  if (!isSafeLocalSrc(src)) return false;
+  const abs = absPathForLocalSrc(src);
+  if (!abs) return false;
+  if (existsSync(abs)) {
+    unlinkSync(abs);
+  }
+  const latest = readLocalLatest();
+  const thumbs = Array.isArray(latest.thumbs)
+    ? latest.thumbs.filter((t) => t.src !== src)
+    : [];
+  latest.thumbs = thumbs;
+  if (latest.thumb === src) {
+    latest.thumb = thumbs.at(-1)?.src;
+  }
+  writeLocalLatest(latest);
+  return true;
 }

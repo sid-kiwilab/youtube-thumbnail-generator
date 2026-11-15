@@ -3,6 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChannelSetupCard } from "@/components/ChannelSetupCard";
 import { CollapsibleCompareSection } from "@/components/CollapsibleCompareSection";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { SelectedRefsBar } from "@/components/SelectedRefsBar";
+import { SupportingRefsPanel } from "@/components/SupportingRefsPanel";
+import type { RefAnalysisResult, SelectedRefMeta } from "@/lib/ref-types";
 import type { ChannelBundle, YouTubeVideo } from "@/lib/youtube-types";
 import type { CompetitorEntry } from "@/lib/workspace-store";
 
@@ -69,7 +73,17 @@ export function ThumbnailStudio() {
   const [suggestedTitle, setSuggestedTitle] = useState("");
   const [localThumbs, setLocalThumbs] = useState<{ src: string }[]>([]);
   const [evalNote, setEvalNote] = useState<string | null>(null);
-  const [selectedRefs, setSelectedRefs] = useState<Set<string>>(new Set());
+  const [refByUrl, setRefByUrl] = useState<Record<string, SelectedRefMeta>>({});
+  const [supportingSrcs, setSupportingSrcs] = useState<string[]>([]);
+  const [refAnalysis, setRefAnalysis] = useState<RefAnalysisResult | null>(
+    null,
+  );
+  const [refAnalysisOpen, setRefAnalysisOpen] = useState(false);
+  const [hasOpenRouter, setHasOpenRouter] = useState(false);
+  const [pendingDeleteSrc, setPendingDeleteSrc] = useState<string | null>(
+    null,
+  );
+  const [deleting, setDeleting] = useState(false);
   const [busyGen, setBusyGen] = useState<string | null>(null);
   const [workspaceHandle, setWorkspaceHandle] = useState("");
   const [competitorAdd, setCompetitorAdd] = useState("");
@@ -81,6 +95,41 @@ export function ThumbnailStudio() {
     "niche" | "competitors" | null
   >(null);
   const refetchGenRef = useRef(0);
+  const thumbGenRef = useRef(0);
+
+  const selectedRefs = useMemo(
+    () => new Set(Object.keys(refByUrl)),
+    [refByUrl],
+  );
+  const selectedRefList = useMemo(
+    () => Object.values(refByUrl),
+    [refByUrl],
+  );
+
+  const refLookup = useMemo(() => {
+    const m = new Map<string, SelectedRefMeta>();
+    if (myChannel) {
+      for (const v of myChannel.videos) {
+        m.set(v.thumbUrl, {
+          thumbUrl: v.thumbUrl,
+          source: "mine",
+          channelHandle: myChannel.handle,
+          videoTitle: v.title,
+        });
+      }
+    }
+    for (const ch of nicheChannels) {
+      for (const v of ch.videos) {
+        m.set(v.thumbUrl, {
+          thumbUrl: v.thumbUrl,
+          source: "competitor",
+          channelHandle: ch.handle,
+          videoTitle: v.title,
+        });
+      }
+    }
+    return m;
+  }, [myChannel, nicheChannels]);
 
   const applyStudioPayload = useCallback(
     (data: {
@@ -178,6 +227,14 @@ export function ThumbnailStudio() {
         if (Array.isArray(data.thumbs)) {
           setLocalThumbs(data.thumbs.map((t: { src: string }) => ({ src: t.src })));
         }
+      })
+      .catch(() => {});
+
+    void fetch("/api/config")
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        setHasOpenRouter(Boolean(data.hasOpenRouter));
       })
       .catch(() => {});
 
@@ -397,12 +454,33 @@ export function ThumbnailStudio() {
   );
 
   const toggleRef = (thumbUrl: string) => {
-    setSelectedRefs((prev) => {
-      const next = new Set(prev);
-      if (next.has(thumbUrl)) next.delete(thumbUrl);
-      else if (next.size < 4) next.add(thumbUrl);
+    const meta = refLookup.get(thumbUrl);
+    if (!meta) return;
+    setRefByUrl((prev) => {
+      if (prev[thumbUrl]) {
+        const next = { ...prev };
+        delete next[thumbUrl];
+        return next;
+      }
+      if (Object.keys(prev).length >= 4) return prev;
+      return { ...prev, [thumbUrl]: meta };
+    });
+    setRefAnalysis(null);
+  };
+
+  const removeRef = (thumbUrl: string) => {
+    setRefByUrl((prev) => {
+      if (!prev[thumbUrl]) return prev;
+      const next = { ...prev };
+      delete next[thumbUrl];
       return next;
     });
+    setRefAnalysis(null);
+  };
+
+  const clearAllRefs = () => {
+    setRefByUrl({});
+    setRefAnalysis(null);
   };
 
   const runTitle = async () => {
@@ -437,31 +515,92 @@ export function ThumbnailStudio() {
       setError("Write a brief");
       return;
     }
-    const refs = [...selectedRefs];
-    if (!refs.length) {
-      setError("Select at least one reference thumb (Use ref on your videos)");
+    if (!selectedRefList.length) {
+      setError(
+        "Select at least one reference thumb (Use ref on your or competitor videos)",
+      );
       return;
     }
-    setBusyGen("thumb");
+    const gen = ++thumbGenRef.current;
     setError(null);
+    setRefAnalysis(null);
+
+    let analysis: RefAnalysisResult | null = null;
+    if (hasOpenRouter) {
+      setBusyGen("analyze");
+      try {
+        const res = await fetch("/api/eval/refs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            refs: selectedRefList,
+            channelTitle: myChannel?.title || "Your channel",
+            channelHandle: myChannel?.handle || workspaceHandle,
+            channelAvatar: myChannel?.thumbnailUrl || "",
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (gen !== thumbGenRef.current) return;
+        if (!res.ok) throw new Error(data.error || "Ref analysis failed");
+        analysis = {
+          items: data.items ?? [],
+          summary: data.summary ?? "",
+        };
+        setRefAnalysis(analysis);
+      } catch (e) {
+        if (gen === thumbGenRef.current) {
+          setError(e instanceof Error ? e.message : "Ref analysis failed");
+          setBusyGen(null);
+        }
+        return;
+      }
+    }
+
+    if (gen !== thumbGenRef.current) return;
+    setBusyGen("thumb");
     try {
       const res = await fetch("/api/suggest/thumb", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           brief,
-          refs,
+          refMeta: selectedRefList,
+          refAnalysis: analysis,
+          supportingSrcs: supportingSrcs,
           title: suggestedTitle,
           slug: "draft",
         }),
       });
       const data = await res.json().catch(() => ({}));
+      if (gen !== thumbGenRef.current) return;
       if (!res.ok) throw new Error(data.error || "Thumbnail failed");
       setLocalThumbs((old) => [...old, { src: data.src }]);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Thumbnail failed");
+      if (gen === thumbGenRef.current) {
+        setError(e instanceof Error ? e.message : "Thumbnail failed");
+      }
     } finally {
-      setBusyGen(null);
+      if (gen === thumbGenRef.current) setBusyGen(null);
+    }
+  };
+
+  const confirmDeleteLocal = async () => {
+    if (!pendingDeleteSrc || deleting) return;
+    setDeleting(true);
+    try {
+      const res = await fetch("/api/local/thumb", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ src: pendingDeleteSrc }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Delete failed");
+      setLocalThumbs((old) => old.filter((t) => t.src !== pendingDeleteSrc));
+      setPendingDeleteSrc(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Delete failed");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -557,7 +696,7 @@ export function ThumbnailStudio() {
 
         {myChannel ? (
           <div className="space-y-3">
-            <SectionTitle hint="Sorted by views · tap Ref on thumbs you want to mimic">
+            <SectionTitle hint="Sorted by views · tap Use ref (yours or competitors, max 4)">
               Your thumbnails
             </SectionTitle>
             {myChannel.videos.length === 0 ? (
@@ -586,7 +725,7 @@ export function ThumbnailStudio() {
 
         {nicheChannels.length > 0 ? (
           <div className="space-y-3">
-            <SectionTitle hint="Collapsed by default — expand to compare hooks">
+            <SectionTitle hint="Collapsed by default — expand and tap Use ref on competitor hooks">
               Niche compare
             </SectionTitle>
             <div className="space-y-2">
@@ -595,14 +734,31 @@ export function ThumbnailStudio() {
                   key={ch.channelId}
                   channel={ch}
                   videos={ch.videos.map(videoToRanked)}
+                  selectable
+                  selectedRefs={selectedRefs}
+                  onToggleSelect={toggleRef}
                 />
               ))}
             </div>
           </div>
         ) : null}
 
+        {selectedRefList.length ? (
+          <SelectedRefsBar
+            refs={selectedRefList}
+            onRemove={removeRef}
+            onClearAll={clearAllRefs}
+          />
+        ) : null}
+
         <section className="rounded-2xl border border-white/10 bg-[#121212] p-4 sm:p-5">
-          <SectionTitle hint="OpenRouter title · OpenAI thumb · saved locally">
+          <SectionTitle
+            hint={
+              hasOpenRouter
+                ? "OpenRouter ref analysis · OpenAI thumb · saved locally"
+                : "Add OPENROUTER_API_KEY for ref analysis before generate"
+            }
+          >
             Suggest for a new video
           </SectionTitle>
           <textarea
@@ -611,6 +767,10 @@ export function ThumbnailStudio() {
             rows={3}
             placeholder="What's the new video about?"
             className="w-full rounded-lg border border-neutral-700 bg-[#0f0f0f] px-3 py-2 text-sm outline-none focus:border-neutral-500"
+          />
+          <SupportingRefsPanel
+            selected={supportingSrcs}
+            onChangeSelected={setSupportingSrcs}
           />
           <div className="mt-4 flex flex-wrap gap-2">
             <button
@@ -623,13 +783,38 @@ export function ThumbnailStudio() {
             </button>
             <button
               type="button"
-              disabled={busyGen === "thumb"}
+              disabled={busyGen === "thumb" || busyGen === "analyze"}
               onClick={() => void runThumb()}
               className="rounded-lg bg-[#ff0000] px-4 py-2 text-sm font-medium text-white hover:bg-red-600 disabled:opacity-50"
             >
-              {busyGen === "thumb" ? "Generating…" : "Generate thumbnail"}
+              {busyGen === "analyze"
+                ? "Analyzing refs…"
+                : busyGen === "thumb"
+                  ? "Generating…"
+                  : "Generate thumbnail"}
             </button>
           </div>
+          {refAnalysis ? (
+            <div className="mt-4 rounded-lg border border-neutral-700 bg-black/30 p-3 text-xs text-neutral-300">
+              <button
+                type="button"
+                className="mb-1 font-semibold text-neutral-400 underline"
+                onClick={() => setRefAnalysisOpen((v) => !v)}
+              >
+                {refAnalysisOpen ? "Hide" : "Show"} ref analysis
+              </button>
+              <p className="text-neutral-200">{refAnalysis.summary}</p>
+              {refAnalysisOpen ? (
+                <ul className="mt-2 list-inside list-disc space-y-1 text-neutral-400">
+                  {refAnalysis.items.map((it) => (
+                    <li key={it.thumbUrl}>
+                      [{it.source}] {it.layoutToBorrow}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ) : null}
           {suggestedTitle ? (
             <p className="mt-4 text-sm">
               <span className="text-neutral-500">Title: </span>
@@ -643,7 +828,15 @@ export function ThumbnailStudio() {
               </p>
               <div className="flex flex-wrap gap-3">
                 {localThumbs.map((t) => (
-                  <div key={t.src} className="w-36">
+                  <div key={t.src} className="relative w-36">
+                    <button
+                      type="button"
+                      aria-label="Delete local thumbnail"
+                      onClick={() => setPendingDeleteSrc(t.src)}
+                      className="absolute right-1 top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-black/80 text-sm text-white hover:bg-red-600"
+                    >
+                      ×
+                    </button>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={t.src}
@@ -679,6 +872,16 @@ export function ThumbnailStudio() {
           ) : null}
         </section>
       </div>
+
+      <ConfirmDialog
+        open={pendingDeleteSrc !== null}
+        title="Delete local thumbnail?"
+        description="Removes this file from public/local and from latest.json. This cannot be undone."
+        confirmLabel="Delete"
+        busy={deleting}
+        onCancel={() => setPendingDeleteSrc(null)}
+        onConfirm={() => void confirmDeleteLocal()}
+      />
     </div>
   );
 }

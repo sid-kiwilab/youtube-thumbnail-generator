@@ -108,3 +108,71 @@ export async function visionEval(imageUrlOrDataUrl: string) {
   }
   return { score: 0, notes: raw };
 }
+
+export type AnalyzeRefInput = {
+  thumbUrl: string;
+  source: "mine" | "competitor";
+  videoTitle: string;
+  channelHandle: string;
+};
+
+export async function analyzeRefs(opts: {
+  channelTitle: string;
+  channelHandle: string;
+  channelAvatar: string;
+  refs: AnalyzeRefInput[];
+}) {
+  const { refAnalyzeSystemPrompt } = await import("./prompts");
+  const system = refAnalyzeSystemPrompt({
+    channelTitle: opts.channelTitle,
+    channelHandle: opts.channelHandle,
+    channelAvatar: opts.channelAvatar || "(none)",
+  });
+
+  const userText = [
+    "Analyze each reference thumbnail below.",
+    ...opts.refs.map(
+      (r, i) =>
+        `Ref ${i + 1}: thumbUrl=${r.thumbUrl}; source=${r.source}; channel=${r.channelHandle}; videoTitle=${JSON.stringify(r.videoTitle)}`,
+    ),
+  ].join("\n");
+
+  const imageParts = opts.refs.map((r) => ({
+    type: "image_url" as const,
+    image_url: { url: r.thumbUrl },
+  }));
+
+  const raw = await openRouterChat({
+    model: visionModel(),
+    messages: [
+      { role: "system", content: system },
+      {
+        role: "user",
+        content: [{ type: "text", text: userText }, ...imageParts],
+      },
+    ],
+    maxTokens: 1200,
+  });
+
+  try {
+    const start = raw.indexOf("{");
+    const end = raw.lastIndexOf("}");
+    if (start >= 0 && end > start) {
+      return JSON.parse(raw.slice(start, end + 1)) as {
+        items: {
+          thumbUrl: string;
+          source: "mine" | "competitor";
+          creatorFace: string;
+          otherFaces: string;
+          layoutToBorrow: string;
+          textOnImage: string;
+          doNotCopy: string;
+        }[];
+        summary: string;
+      };
+    }
+  } catch {
+    /* fall through */
+  }
+  throw new Error("Could not parse ref analysis from model");
+}
