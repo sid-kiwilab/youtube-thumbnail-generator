@@ -1,0 +1,93 @@
+{
+  "slug": "rizz-fails",
+  "title": "i watched rizz fails and they were peak cringe",
+  "thumb": "/generated/rizz-fails-v14.jpg",
+  "thumbs": [
+    {
+      "id": "rizz-fails",
+      "src": "/generated/rizz-fails.jpg",
+      "thumbnailVersion": 1,
+      "generatedAt": "2026-10-13T02:22:05.076Z"
+    },
+    {
+      "id": "rizz-fails-v3",
+      "src": "/generated/rizz-fails-v3.jpg"
+    },
+    {
+      "id": "rizz-fails-v4",
+      "src": "/generated/rizz-fails-v4.jpg",
+      "thumbnailVersion": 4,
+      "generatedAt": "2026-10-13T02:47:48.062Z"
+    },
+    {
+      "id": "rizz-fails-v5",
+      "src": "/generated/rizz-fails-v5.jpg",
+      "thumbnailVersion": 5,
+      "generatedAt": "2026-10-13T02:54:44.281Z"
+    },
+    {
+      "id": "rizz-fails-v6",
+      "src": "/generated/rizz-fails-v6.jpg",
+      "thumbnailVersion": 6,
+      "generatedAt": "2026-10-13T02:58:59.051Z"
+    },
+    {
+      "id": "rizz-fails-v7",
+      "src": "/generated/rizz-fails-v7.jpg",
+      "thumbnailVersion": 7,
+      "generatedAt": "2026-10-13T08:08:07.951Z"
+    },
+    {
+      "id": "rizz-fails-v8",
+      "src": "/generated/rizz-fails-v8.jpg",
+      "notes": "v3 left face + v7 right (quoted BUTIFUL)",
+      "generatedAt": "2026-10-13T08:13:13.092Z"
+    },
+    {
+      "id": "rizz-fails-v9",
+      "src": "/generated/rizz-fails-v9.jpg",
+      "notes": "original rizz-fails Sid face + v7 right (quoted BUTIFUL)",
+      "generatedAt": "2026-10-13T08:16:23.142Z"
+    },
+    {
+      "id": "rizz-fails-v10",
+      "src": "/generated/rizz-fails-v10.jpg",
+      "notes": "original rizz-fails Sid face (no stamp) + v7 right",
+      "generatedAt": "2026-10-13T08:18:07.490Z"
+    },
+    {
+      "id": "rizz-fails-v11",
+      "src": "/generated/rizz-fails-v11.jpg",
+      "notes": "clean v3 Sid + v7 quoted guy (no seam double-face)",
+      "generatedAt": "2026-10-13T08:19:39.263Z"
+    },
+    {
+      "id": "rizz-fails-v12",
+      "src": "/generated/rizz-fails-v12.jpg",
+      "notes": "zoomed original Sid (centered, no stamp) + v7 quoted guy, hard split",
+      "generatedAt": "2026-10-13T08:21:40.432Z"
+    },
+    {
+      "id": "rizz-fails-v13",
+      "src": "/generated/rizz-fails-v13.jpg",
+      "notes": "tighter centered original Sid + v7 quoted guy, hard split",
+      "generatedAt": "2026-10-13T08:22:49.371Z"
+    },
+    {
+      "id": "rizz-fails-v14",
+      "src": "/generated/rizz-fails-v14.jpg",
+      "notes": "v12 crop nudged left ~28px + v7 quoted guy",
+      "generatedAt": "2026-10-13T08:23:54.653Z"
+    }
+  ],
+  "duration": "4:31",
+  "channel": "@sidvenkman",
+  "titleVersion": 2,
+  "thumbnailVersion": 7,
+  "image": {
+    "model": "gpt-image-2",
+    "quality": "low",
+    "size": "1280x720"
+  },
+  "generatedAt": "2026-10-13T08:23:54.654Z"
+}

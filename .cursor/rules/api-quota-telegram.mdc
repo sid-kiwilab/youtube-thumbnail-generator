@@ -1,0 +1,14 @@
+---
+description: Ping Telegram when Groq, OpenAI, or OpenRouter credits/quota run out
+alwaysApply: true
+---
+
+# API quota → Telegram
+
+If Groq, OpenAI, OpenRouter (or similar) returns **429**, **402**, `insufficient_quota`, rate-limit, or billing/credits exhausted while you are working:
+
+1. Run `node scripts/telegram-notify.mjs` with a short message naming the vendor and what failed.
+2. Tell Sid in chat. Do not retry spendy calls in a loop.
+3. Do not print API keys or `TELEGRAM_BOT_TOKEN`.
+
+Needs `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` in `.env`. If chat id is missing: Sid taps Start on t.me/youtube_editor_ai_bot, then `node scripts/telegram-notify.mjs --discover`.
