@@ -20,7 +20,7 @@ PLAN → Cursor Build → REVIEW ⇄ FIX → SYNC → PUSH
 4. **FIX** — patch those rows only. Cannot declare “No findings.”
 5. Repeat **3 ⇄ 4** until REVIEW is clean **and** the original goal is still fully true.
 6. **SYNC** — goal check + docs if behavior changed. **No** build/lint.
-7. **PUSH** — `npm run build` + `npm run lint`, then commit + push. **Requires SYNC first.** Dropping `PUSH.md` authorizes commit/push that turn.
+7. **PUSH** — `npm run build` + `npm run lint`, then commit, land on **`main`**, and **production** deploy (`vercel --prod` when applicable). **Requires SYNC first.** Dropping `PUSH.md` authorizes git + prod that turn.
 
 Optional: `/goal <one-sentence>` after PLAN so Cursor keeps the objective across turns. **Do not** `/loop` this kit. Drag the next file.
 
@@ -35,7 +35,7 @@ Optional: `/goal <one-sentence>` after PLAN so Cursor keeps the objective across
 | 3 | Drop [REVIEW.md](./REVIEW.md) | Adversarial diff vs goal | Patches; toolchain |
 | 4 | Drop [FIX.md](./FIX.md) if findings | Patch surviving rows | New features; “it’s solid” |
 | 5 | Drop [SYNC.md](./SYNC.md) when REVIEW is clean | Goal + docs only | Build/lint; commit |
-| 6 | Drop [PUSH.md](./PUSH.md) after SYNC | Build + lint + commit + push | Skipping SYNC; force push |
+| 6 | Drop [PUSH.md](./PUSH.md) after SYNC | Build + lint + commit + `main` + prod | Skipping SYNC; preview-only push |
 
 **REVIEW ⇄ FIX** is the quality loop. **SYNC** then **PUSH** is the publish path. If REVIEW never said **No findings**, do not drop SYNC. **Never drop PUSH before SYNC.**
 

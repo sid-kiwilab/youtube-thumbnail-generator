@@ -1,6 +1,6 @@
 # PUSH — prove and publish
 
-**Job:** ship to git. **Not:** new features, not doc rewrites, not redefining the goal.
+**Job:** ship to git **and production** (`main` + `vercel --prod` when applicable). **Not:** new features, not doc rewrites, not redefining the goal.
 
 Run only after **SYNC** completed this pass. Dropping this file is Sid’s **authorization to commit and push this turn**.
 
@@ -33,12 +33,22 @@ Fail → drop **FIX.md** (or Build), fix, re-run **SYNC** if docs needed, then *
 
 4. `git commit` → `git push` (use `gh` only if that’s already how this repo ships; default `git push`).
 
-## 4. Report
+## 4. Production (required)
+
+Dropping **PUSH.md** authorizes **production** ship this turn. Push to a non-`main` branch (or git-only without prod deploy) updates **preview** only — the live site stays stale.
+
+1. **`main` must contain this commit** before you stop. Not on `main`? Merge or push to `origin main` the way this repo ships (direct push, or `gh pr merge` then `git checkout main` + `git pull`).
+2. **Vercel production** — from repo root: run `npx vercel --prod` after `main` is updated, unless README or live docs say Production auto-deploys from `main` only (then confirm the Production deployment finished in Vercel or GitHub Checks).
+
+Do **not** end PUSH with only a preview deployment or a feature-branch push.
+
+## 5. Report
 
 - Goal check: **pass**
 - Build + lint: **pass** or the error
 - Commit: hash + one-line summary
-- Push: remote branch + result
+- Git: branch + push result (`main` at this commit)
+- Production: `vercel --prod` URL / CLI result (or auto-deploy confirmation)
 
 That is the end of the pass.
 
